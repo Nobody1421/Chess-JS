@@ -25,7 +25,7 @@ body{
     display:grid;
     grid-template-columns: repeat(8, 1fr);
 }
-#square {
+.square {
     height: 80px;
     width: 80px;
     cursor: pointer;
