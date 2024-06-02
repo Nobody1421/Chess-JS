@@ -1,5 +1,3 @@
-const gameBoard = document.getElementById("board");
-
 let startingPieces = 
 [
     "b_RookImg.png", "b_KnightImg.png", "b_BishopImg.png", "b_QueenImg.png", "b_KingImg.png", "b_BishopImg.png", "b_KnightImg.png", "b_RookImg.png",
@@ -12,6 +10,7 @@ let startingPieces =
     "w_RookImg.png", "w_KnightImg.png", "w_BishopImg.png", "w_QueenImg.png", "w_KingImg.png", "w_BishopImg.png", "w_KnightImg.png", "w_RookImg.png",
 ];
 function createBoard(){
+    const gameBoard = document.getElementById("board");
     startingPieces.forEach((piece, index) => {
         const gameTile = document.createElement('div');
         gameTile.classList.add('tiles');
@@ -30,30 +29,27 @@ function createBoard(){
             const boardPiece = document.createElement('img');
             boardPiece.src = "pieces/" + piece;
             boardPiece.classList.add('pieces');
-            addImage_EventListeners(boardPiece, index)
+            addImage_EventListeners(boardPiece, index);
 
             gameTile.append(boardPiece);
         }
     });
 }
-function addImage_EventListeners(boardPiece, index){
-    boardPiece.addEventListener('click', function() {
-        if(isValidChessPlayer(boardPiece.src)){
-            movement.setSelectedPawn(boardPiece.src, index);
-            movement.moveProcess();
-        }
+function addImage_EventListeners(pieceImage, TileId){
+    pieceImage.addEventListener('click', function() {
+        movement.setCurrentTileId(TileId);
+        movement.moveProcess();
     });
 }
 // towards the actual game
 function createMovement(){
-    let selectedTile_Id = "";
-    let activeTileArray;
+    let currentTileId = "";
+    let targetTileArray;
     let confirmingMove = false;
     let opponent = true;
 
-    function setSelectedPawn(boardPiece, boardIndex){
-        selectedTile_Id = boardIndex;
-        imageSrc = boardPiece;
+    function setCurrentTileId(boardIndex){
+        currentTileId = boardIndex;
     }
     function setOpponent(value){
         opponent = !value;
@@ -61,68 +57,68 @@ function createMovement(){
     function getOpponent(){
         return opponent;
     }
-    function getselectedId(){
-        return selectedTile_Id;
+    function getCurrentTileId(){
+        return currentTileId;
     }
     function moveProcess(){
         if (confirmingMove == false) {
             confirmingMove = true;
-            activeTileArray = fetchActiveTiles(selectedTile_Id, opponent);
-            insertActiveTiles(activeTileArray);
+            targetTileArray = fetchTargetTiles(currentTileId, opponent);
+            insertTargetTiles(targetTileArray);
         } else {
-            removeAll_activeTiles();
+            clearTargetTiles();
             confirmingMove = false;
         }
     }
-    return {moveProcess, getselectedId, setSelectedPawn, setOpponent, getOpponent}
+    return {moveProcess, getCurrentTileId, setCurrentTileId, setOpponent, getOpponent}
 }
 // ActiveTile Functions
-function insertActiveTiles(activeTileArray){
-    for(let i = 0; i < activeTileArray.length; i++){
-        const oneTileUp = document.getElementById(activeTileArray[i]);
+function insertTargetTiles(targetTilesArray){
+    for(let i = 0; i < targetTilesArray.length; i++){
+        const nextTileId = document.getElementById(targetTilesArray[i]);
 
-        let highLightImg = document.createElement('img');
-        highLightImg.src = "pieces/highlight.png";
-        highLightImg.classList.add('transparent');
-        activeTile_EventListener(highLightImg, activeTileArray[i]);
+        let focusImage = document.createElement('img');
+        focusImage.src = "pieces/highlight.png";
+        focusImage.classList.add('transparent');
+        addTargetTile_EventListener(focusImage, targetTilesArray[i]);
 
-        oneTileUp.append(highLightImg);
+        nextTileId.append(focusImage);
     }
 }
-function removeAll_activeTiles() {
-    const activeTiles = document.querySelectorAll('.transparent');
-    activeTiles.forEach(tile => tile.remove());
+function clearTargetTiles() {
+    const targetTilesArray = document.querySelectorAll('.transparent');
+    targetTilesArray.forEach(tile => tile.remove());
 }
-function fetchActiveTiles(selectedTile_Id, opponent){
+function fetchTargetTiles(currentTileId, opponent){
     const direction = opponent ? 1 : -1;
-    return pawnMovement(selectedTile_Id, direction);
+    return pawnMovement(currentTileId, direction);
 }
-function activeTile_EventListener(highLightImg, activeTileIndex){
-    highLightImg.addEventListener('click', function(){
-        movePiece(movement.getselectedId(), activeTileIndex);
+function addTargetTile_EventListener(focusImage, targetTileId){
+    focusImage.addEventListener('click', function(){
+        movePiece(movement.getCurrentTileId(), targetTileId);
         movement.moveProcess();
     });
 }
-//These functions depend on Active Tiles to move. They move to active Tiles.
-function movePiece(selectedTile_Id, selected_ActiveTile_Id) {
-    promotion(selectedTile_Id, selected_ActiveTile_Id);
-    const [selectedTileImg] = getImageWithId(selectedTile_Id);
-    const createdPiece = document.createElement('img');
+//These functions depend on target Tiles to move. They move to target Tiles.
+function movePiece(currentTileId, targetTileId) {
+    promotion(currentTileId, targetTileId);
+    const [currentTileImage] = getImageWithId(currentTileId);
+    const newPiece = document.createElement('img');
 
-    createdPiece.src = selectedTileImg.src;
-    createdPiece.classList.add('pieces');
-    addImage_EventListeners(createdPiece, selected_ActiveTile_Id);
-    capturingPiece(selected_ActiveTile_Id)
+    newPiece.src = currentTileImage.src;
+    newPiece.classList.add('pieces');
+    addImage_EventListeners(newPiece, targetTileId);
+    capturingPiece(targetTileId)
 
-    document.getElementById(selected_ActiveTile_Id).append(createdPiece);
-    selectedTileImg.remove();
+    document.getElementById(targetTileId).append(newPiece);
+    currentTileImage.remove();
 
-    movement.setSelectedPawn(createdPiece.src, selected_ActiveTile_Id);
+    movement.setCurrentTileId(targetTileId);
     movement.setOpponent(movement.getOpponent());
 }
-function capturingPiece(selected_ActiveTile_Id){
-    let activeTileImage = getImageWithId(selected_ActiveTile_Id);
-    activeTileImage[0].remove();
+function capturingPiece(targetTileId){
+    let targetTileImage = getImageWithId(targetTileId);
+    targetTileImage[0].remove();
 }
 // Minor functions
 function isValidBoundaries(value){
@@ -131,62 +127,57 @@ function isValidBoundaries(value){
     }
         return true;
 }
-function isValidSideBoundaries(offsetTile_Id, direction) {
-    let offSetTileMod = offsetTile_Id % 8;
-    let previousTileMod = (offsetTile_Id - direction) % 8;
+function isValidSideBoundaries(newTileId, moveDirection) {
+    let newTileMod = newTileId % 8;
+    let previousTileMod = (newTileId - moveDirection) % 8;
 
-    return !(previousTileMod === 0 && offSetTileMod === 7) && !(previousTileMod === 7 && offSetTileMod === 0);
+    return !(previousTileMod === 0 && newTileMod === 7) && !(previousTileMod === 7 && newTileMod === 0);
 }
-function isValidChessPlayer(boardPiece) {
+function isValidChessPlayer(playerPiece) {
     const opponent = movement.getOpponent();
-    return opponent ? boardPiece.includes("w_") : boardPiece.includes("b_");
+    return opponent ? playerPiece.includes("w_") : playerPiece.includes("b_");
 }
 function getImageWithId(tileId){
     let tileElement = document.getElementById(tileId);
     return tileElement.getElementsByTagName('img');
 }
 // Piece movement
-function pawnMovement(selectedTile_Id, direction) {
-    let activeTilesArray = [];
+function pawnMovement(currentTileId, direction) {
+    let targetTilesArray = [];
     let limit = 1;
-    if((selectedTile_Id >= 8 && selectedTile_Id <= 15) || (selectedTile_Id >= 48 && selectedTile_Id <= 55)){
+    if((currentTileId >= 8 && currentTileId <= 15) || (currentTileId >= 48 && currentTileId <= 55)){
         limit = 2;
     }
     for (let i = 1; i <= limit; i++) {
-        let newTile = selectedTile_Id - (8 * i * direction);
-        if (!isValidBoundaries(newTile)) break;
-        if(getImageWithId(newTile).length != 0) break;
-        activeTilesArray.push(newTile);
+        let nextTileId = currentTileId - (8 * i * direction);
+        if (!isValidBoundaries(nextTileId)) break;
+        if(getImageWithId(nextTileId).length != 0) break;
+        targetTilesArray.push(nextTileId);
     }
 
     [9, 7].forEach(offset => {
-        let offsetTile_Id = selectedTile_Id - (offset * direction);
-        if (isValidBoundaries(offsetTile_Id) && isValidSideBoundaries(offsetTile_Id, -(offset * direction))) {
-            if (getImageWithId(offsetTile_Id).length != 0 && !isValidChessPlayer(getImageWithId(offsetTile_Id)[0].src)){
-                activeTilesArray.push(offsetTile_Id);
+        let offsetTileId = currentTileId - (offset * direction);
+        if (isValidBoundaries(offsetTileId) && isValidSideBoundaries(offsetTileId, -(offset * direction))) {
+            if (getImageWithId(offsetTileId).length != 0 && !isValidChessPlayer(getImageWithId(offsetTileId)[0].src)){
+                targetTilesArray.push(offsetTileId);
             }
         }
     });
-    return activeTilesArray;
+    return targetTilesArray;
 }
+// Promotion Function
 function promotion(pawnTile_Id, targetTile_Id){
     const imgSrc = getImageWithId(pawnTile_Id)[0].src;
-    let imageColor;
-    if((targetTile_Id >= 0 && targetTile_Id <= 7) || (targetTile_Id >= 56 && targetTile_Id <= 63) && imgSrc.includes("Pawn")){
-        imgSrc.includes("b") ? imageColor = "b": imageColor = "w";
-        const promotionColor = document.getElementsByClassName(imageColor);
-        for(let promotionTiles of promotionColor){
-            promotionTiles.style.visibility = "visible";
-            promotionTiles.onclick = function(){
-                const promotionPiece = promotionTiles.getElementsByTagName('img');
-                const promotionTile = document.getElementById(targetTile_Id);
-                const perviousPiece = promotionTile.getElementsByTagName('img');
-                perviousPiece[0].src = promotionPiece[0].src
-                for(let promotionTilesHide of promotionColor){
-                    promotionTilesHide.style.visibility = "hidden";
-                }
-            }
-        }
+    if(imgSrc.includes("Pawn") && ((targetTile_Id >= 0 && targetTile_Id <= 7) || (targetTile_Id >= 56 && targetTile_Id <= 63))){
+        const imageColor = imgSrc.includes("b") ? "b" : "w";
+        const promotionTiles = document.getElementsByClassName(imageColor);
+        Array.from(promotionTiles).forEach(tile => {
+            tile.style.visibility = "visible";
+            tile.onclick = () => {
+                document.getElementById(targetTile_Id).getElementsByTagName('img')[0].src = tile.getElementsByTagName('img')[0].src;
+                Array.from(promotionTiles).forEach(t => t.style.visibility = "hidden");
+            };
+        });
     }
 }
 createBoard();
