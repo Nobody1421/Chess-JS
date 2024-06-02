@@ -30,7 +30,17 @@ function createBoard(){
             const boardPiece = document.createElement('img');
             boardPiece.src = "pieces/" + piece;
             boardPiece.classList.add('pieces');
+            addImage_EventListeners(boardPiece, index)
+
             gameTile.append(boardPiece);
+        }
+    });
+}
+function addImage_EventListeners(boardPiece, index){
+    boardPiece.addEventListener('click', function() {
+        if(isValidChessPlayer(boardPiece.src)){
+            movement.setSelectedPawn(boardPiece.src, index);
+            movement.moveProcess();
         }
     });
 }
@@ -38,81 +48,122 @@ function createBoard(){
 function createMovement(){
     let imageSrc = "";
     let selectedTile_Id = "";
-    let selectedSquare = false;
     let activeTileArray;
-    let activeTileId = "";
+    let confirmingMove = false;
+    let opponent = true;
 
     function setSelectedPawn(boardPiece, boardIndex){
         selectedTile_Id = boardIndex;
         imageSrc = boardPiece;
     }
-    function setActiveTileId(activeTileIndex){
-        activeTileId = activeTileIndex;
+    function setOpponent(value){
+        opponent = !value;
+    }
+    function getOpponent(){
+        return opponent;
+    }
+    function getselectedId(){
+        return selectedTile_Id;
     }
     function moveProcess(){
-        if(selectedSquare == false){
-            
-            selectedSquare = true;
-
-            activeTileArray = getActiveTiles(selectedTile_Id);
-            addActiveTiles(activeTileArray);
-        }else{
-            movePawn(selectedTile_Id);
+        if (confirmingMove == false) {
+            confirmingMove = true;
+            activeTileArray = fetchActiveTiles(selectedTile_Id, opponent);
+            insertActiveTiles(activeTileArray);
+        } else {
             removeAll_activeTiles();
-            selectedSquare = false;
+            confirmingMove = false;
         }
     }
-    function addActiveTiles(activeTileArray){
-        for(let i = 0; i < activeTileArray.length; i++){
-            const oneTileUp = document.getElementById(activeTileArray[i]);
+    return {moveProcess, getselectedId, setSelectedPawn, setOpponent, getOpponent}
+}
+// ActiveTile Functions
+function insertActiveTiles(activeTileArray){
+    for(let i = 0; i < activeTileArray.length; i++){
+        const oneTileUp = document.getElementById(activeTileArray[i]);
 
-            const highLightImg = document.createElement('img');
-            highLightImg.src = "pieces/highlight.png";
-            highLightImg.classList.add('transparent');
-            activeTile_EventListener(highLightImg, activeTileArray[i]);
+        let highLightImg = document.createElement('img');
+        highLightImg.src = "pieces/highlight.png";
+        highLightImg.classList.add('transparent');
+        activeTile_EventListener(highLightImg, activeTileArray[i]);
 
-            oneTileUp.append(highLightImg);
-        }
+        oneTileUp.append(highLightImg);
     }
-    return {moveProcess, setActiveTileId, setSelectedPawn}
 }
-function getActiveTiles(selectedTile_Id){
-    let activeTileArray = [selectedTile_Id - 8, selectedTile_Id - 16];
-    return activeTileArray;
+function removeAll_activeTiles() {
+    const activeTiles = document.querySelectorAll('.transparent');
+    activeTiles.forEach(tile => tile.remove());
 }
-
-function movePawn(){
-
-}
-function removeAll_activeTiles(){
-    const activeTiles = document.getElementsByClassName('transparent');
-    let activeTilesLength = activeTiles.length;
-    for(let i = 0; i < activeTilesLength; i++){
-        activeTiles[0].remove();
-    }
+function fetchActiveTiles(selectedTile_Id, opponent){
+    const direction = opponent ? 1 : -1;
+    return pawnMovement(selectedTile_Id, direction);
 }
 function activeTile_EventListener(highLightImg, activeTileIndex){
     highLightImg.addEventListener('click', function(){
-        movement.setActiveTileId(activeTileIndex);
+        movePiece(movement.getselectedId(), activeTileIndex);
         movement.moveProcess();
     });
 }
-function Image_EventListeners(){
-    const boardSquares = document.getElementsByClassName('tiles');
-    for(let i = 0; i < boardSquares.length; i++){
-        const occupiedPiece = boardSquares[i].getElementsByTagName('img');
-        if(occupiedPiece.length == 1){
-            occupiedPiece[0].addEventListener('click', function() {
-                movement.setSelectedPawn(occupiedPiece[0].src, boardSquares[i].id);
-                movement.moveProcess();
-            });
-        }
+//These functions depend on Active Tiles to move. They move to active Tiles.
+function movePiece(selectedTile_Id, selected_ActiveTile_Id) {
+    const [selectedTileImg] = getImageWithId(selectedTile_Id);
+    const createdPiece = document.createElement('img');
+
+    createdPiece.src = selectedTileImg.src;
+    createdPiece.classList.add('pieces');
+    addImage_EventListeners(createdPiece, selected_ActiveTile_Id);
+    capturingPiece(selected_ActiveTile_Id)
+
+    document.getElementById(selected_ActiveTile_Id).append(createdPiece);
+    selectedTileImg.remove();
+
+    movement.setSelectedPawn(createdPiece.src, selected_ActiveTile_Id);
+    movement.setOpponent(movement.getOpponent());
+}
+function capturingPiece(selected_ActiveTile_Id){
+    let activeTileImage = getImageWithId(selected_ActiveTile_Id);
+    activeTileImage[0].remove();
+}
+// Minor functions
+function isValidBoundaries(value){
+    if (value < 0 || value > 63) {
+        return false;
     }
+        return true;
+}
+function isValidChessPlayer(boardPiece) {
+    const opponent = movement.getOpponent();
+    return opponent ? boardPiece.includes("w_") : boardPiece.includes("b_");
+}
+function getImageWithId(tileId){
+    let tileElement = document.getElementById(tileId);
+    return tileElement.getElementsByTagName('img');
+}
+// Piece movement
+function pawnMovement(selectedTile_Id, direction) {
+    let activeTilesArray = [];
+    let limit = 1;
+    if((selectedTile_Id >= 8 && selectedTile_Id <= 15) || (selectedTile_Id >= 48 && selectedTile_Id <= 55)){
+        limit = 2;
+    }
+    
+    for (let i = 1; i <= limit; i++) {
+        let newTile = selectedTile_Id - (8 * i * direction);
+        if (!isValidBoundaries(newTile)) break;
+        if(getImageWithId(newTile).length != 0) break;
+        activeTilesArray.push(newTile);
+    }
+
+    [9, 7].forEach(offset => {
+        let tileId = selectedTile_Id - (offset * direction);
+        if (isValidBoundaries(tileId)) {
+            if (getImageWithId(tileId).length != 0 && !isValidChessPlayer(getImageWithId(tileId)[0].src)){
+                activeTilesArray.push(tileId);
+            }
+        }
+    });
+    return activeTilesArray;
 }
 
-function movePiece(){
-
-}
 createBoard();
 const movement = createMovement();
-Image_EventListeners();
