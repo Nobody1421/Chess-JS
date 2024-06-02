@@ -42,7 +42,7 @@ body{
     height: 100%;
     cursor: pointer;
     position: absolute;
-    opacity: 0.65;
+    opacity: 0.80;
     z-index:2;
 }
 .green {
@@ -50,4 +50,24 @@ body{
 }
 .white {
     background-color: #EEEED2;
+}
+/* Promotion bar*/
+#promotion{
+    display:grid;
+    grid-template-columns: repeat(1, 1fr);
+    border-radius: 15px;
+    overflow: hidden;
+}
+.w{
+    background-color: rgb(112, 106, 106);
+    visibility:hidden;
+}
+.b{
+    background-color: rgb(112, 106, 106);
+    visibility:hidden;
+}
+.promotionTiles {
+    position: relative;
+    height: 80px;
+    width: 80px;
 }

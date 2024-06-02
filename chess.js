@@ -46,7 +46,6 @@ function addImage_EventListeners(boardPiece, index){
 }
 // towards the actual game
 function createMovement(){
-    let imageSrc = "";
     let selectedTile_Id = "";
     let activeTileArray;
     let confirmingMove = false;
@@ -106,6 +105,7 @@ function activeTile_EventListener(highLightImg, activeTileIndex){
 }
 //These functions depend on Active Tiles to move. They move to active Tiles.
 function movePiece(selectedTile_Id, selected_ActiveTile_Id) {
+    promotion(selectedTile_Id, selected_ActiveTile_Id);
     const [selectedTileImg] = getImageWithId(selectedTile_Id);
     const createdPiece = document.createElement('img');
 
@@ -131,6 +131,12 @@ function isValidBoundaries(value){
     }
         return true;
 }
+function isValidSideBoundaries(offsetTile_Id, direction) {
+    let offSetTileMod = offsetTile_Id % 8;
+    let previousTileMod = (offsetTile_Id - direction) % 8;
+
+    return !(previousTileMod === 0 && offSetTileMod === 7) && !(previousTileMod === 7 && offSetTileMod === 0);
+}
 function isValidChessPlayer(boardPiece) {
     const opponent = movement.getOpponent();
     return opponent ? boardPiece.includes("w_") : boardPiece.includes("b_");
@@ -146,7 +152,6 @@ function pawnMovement(selectedTile_Id, direction) {
     if((selectedTile_Id >= 8 && selectedTile_Id <= 15) || (selectedTile_Id >= 48 && selectedTile_Id <= 55)){
         limit = 2;
     }
-    
     for (let i = 1; i <= limit; i++) {
         let newTile = selectedTile_Id - (8 * i * direction);
         if (!isValidBoundaries(newTile)) break;
@@ -155,15 +160,34 @@ function pawnMovement(selectedTile_Id, direction) {
     }
 
     [9, 7].forEach(offset => {
-        let tileId = selectedTile_Id - (offset * direction);
-        if (isValidBoundaries(tileId)) {
-            if (getImageWithId(tileId).length != 0 && !isValidChessPlayer(getImageWithId(tileId)[0].src)){
-                activeTilesArray.push(tileId);
+        let offsetTile_Id = selectedTile_Id - (offset * direction);
+        if (isValidBoundaries(offsetTile_Id) && isValidSideBoundaries(offsetTile_Id, -(offset * direction))) {
+            if (getImageWithId(offsetTile_Id).length != 0 && !isValidChessPlayer(getImageWithId(offsetTile_Id)[0].src)){
+                activeTilesArray.push(offsetTile_Id);
             }
         }
     });
     return activeTilesArray;
 }
-
+function promotion(pawnTile_Id, targetTile_Id){
+    const imgSrc = getImageWithId(pawnTile_Id)[0].src;
+    let imageColor;
+    if((targetTile_Id >= 0 && targetTile_Id <= 7) || (targetTile_Id >= 56 && targetTile_Id <= 63) && imgSrc.includes("Pawn")){
+        imgSrc.includes("b") ? imageColor = "b": imageColor = "w";
+        const promotionColor = document.getElementsByClassName(imageColor);
+        for(let promotionTiles of promotionColor){
+            promotionTiles.style.visibility = "visible";
+            promotionTiles.onclick = function(){
+                const promotionPiece = promotionTiles.getElementsByTagName('img');
+                const promotionTile = document.getElementById(targetTile_Id);
+                const perviousPiece = promotionTile.getElementsByTagName('img');
+                perviousPiece[0].src = promotionPiece[0].src
+                for(let promotionTilesHide of promotionColor){
+                    promotionTilesHide.style.visibility = "hidden";
+                }
+            }
+        }
+    }
+}
 createBoard();
 const movement = createMovement();
