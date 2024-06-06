@@ -143,6 +143,8 @@ function getImageWithId(tileId){
 }
 // Piece movement
 function pawnMovement(currentTileId, direction) {
+    // This function has a glitch that allows white to blacks move with their pawns.
+    // this is because this function does not check for who the opponent is
     let targetTilesArray = [];
     let limit = 1;
     if((currentTileId >= 8 && currentTileId <= 15) || (currentTileId >= 48 && currentTileId <= 55)){
